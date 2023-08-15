@@ -1,45 +1,70 @@
-# Simple CI/CD pipeline using GitHub Actions
 name: Simple CI/CD
 
 on:
-  push: # trigger the workflow when changes are pushed to the main branch
-    branches: [ main ]
-
-env:
-  buildConfiguration: 'Release' # set the build configuration to Release
-  azureSubscription: 'MyAzureSubscription' # set the Azure subscription name
-  webAppName: 'MyWebApp' # set the web app name
+  push:
+    branches: [main]
 
 jobs:
-  build-and-deploy: # build and deploy job
-    name: Build and deploy job
-    runs-on: ubuntu-latest # use Ubuntu as the runner
+  build:
+    name: Build
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2 # use checkout action to clone the repository
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1 # use setup-dotnet action to install .NET Core SDK
-      with:
-        dotnet-version: '5.0.x' # specify the .NET Core version
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14.x'
 
-    - name: Restore
-      run: dotnet restore # restore the dependencies
+      - name: Install dependencies
+        run: npm install
 
-    - name: Build
-      run: dotnet build --configuration ${{ env.buildConfiguration }} --no-restore # build the project
+      - name: Build
+        run: npm run build
 
-    - name: Publish
-      run: dotnet publish --configuration ${{ env.buildConfiguration }} --output ${{ github.workspace }}/artifacts --no-build # publish the project
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-output
+          path: dist
 
-    - name : Azure login 
-      uses : azure/login@v1 # use Azure login action to login to Azure using service principal credentials 
-      with : 
-        creds : ${{ secrets.AZURE_CREDENTIALS }} # specify the Azure credentials as a secret 
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: build
 
-    - name : Deploy to web app 
-      uses : azure/webapps-deploy@v2 # use webapps-deploy action to deploy the application to a web app 
-      with : 
-        app-name : ${{ env.webAppName }} # specify the web app name 
-        package : ${{ github.workspace }}/artifacts # specify the package path 
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14.x'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Test
+        run: npm test
+
+      - name: Code coverage
+        run: npm run coverage
+
+      - name: Code analysis
+        run: npm run lint
+
+  deploy:
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: build-output
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@4.1.5
+        with:
+          branch: gh-pages
+          folder: build-output
