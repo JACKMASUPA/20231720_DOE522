@@ -1,33 +1,45 @@
-name: CI
+# Simple CI/CD pipeline using GitHub Actions
+name: Simple CI/CD
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:
+  push: # trigger the workflow when changes are pushed to the main branch
+    branches: [ main ]
+
+env:
+  buildConfiguration: 'Release' # set the build configuration to Release
+  azureSubscription: 'MyAzureSubscription' # set the Azure subscription name
+  webAppName: 'MyWebApp' # set the web app name
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-and-deploy: # build and deploy job
+    name: Build and deploy job
+    runs-on: ubuntu-latest # use Ubuntu as the runner
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2 # use checkout action to clone the repository
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14.x'
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1 # use setup-dotnet action to install .NET Core SDK
+      with:
+        dotnet-version: '5.0.x' # specify the .NET Core version
 
-      - name: Install Dependencies
-        run: npm install
-        working-directory: 20231720_DOE522
+    - name: Restore
+      run: dotnet restore # restore the dependencies
 
+    - name: Build
+      run: dotnet build --configuration ${{ env.buildConfiguration }} --no-restore # build the project
 
-      - name: Install Dependencies
-        run: npm install
-        working-directory: 20231720_DOE522
+    - name: Publish
+      run: dotnet publish --configuration ${{ env.buildConfiguration }} --output ${{ github.workspace }}/artifacts --no-build # publish the project
 
+    - name : Azure login 
+      uses : azure/login@v1 # use Azure login action to login to Azure using service principal credentials 
+      with : 
+        creds : ${{ secrets.AZURE_CREDENTIALS }} # specify the Azure credentials as a secret 
 
-      # Add steps for other stages (Test, Deploy) if needed
+    - name : Deploy to web app 
+      uses : azure/webapps-deploy@v2 # use webapps-deploy action to deploy the application to a web app 
+      with : 
+        app-name : ${{ env.webAppName }} # specify the web app name 
+        package : ${{ github.workspace }}/artifacts # specify the package path 
