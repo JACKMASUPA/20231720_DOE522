@@ -12,25 +12,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-      # Build Stage
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14.x'
+
+      - name: Install Dependencies
+        run: npm install
+        working-directory: ./20231720_DOE522
+
       - name: Build
-        run: |
-          # Replace with your build commands
-          npm install
-          npm run build
+        run: npm run build
+        working-directory: ./20231720_DOE522
 
-      # Test Stage
-      - name: Test
-        run: |
-          # Replace with your test commands
-          npm test
-
-      # Deploy Stage
-      - name: Deploy to Staging
-        run: |
-          # Replace with your deployment commands
-          echo Deploying to staging environment...
-
-# Add more jobs for additional stages if needed
+      # Add steps for other stages (Test, Deploy) if needed
