@@ -22,10 +22,12 @@ jobs:
 
       - name: Install Dependencies
         run: npm install
-        working-directory: ./20231720_DOE522
+        working-directory: 20231720_DOE522
 
-      - name: Build
-        run: npm run build
-        working-directory: ./20231720_DOE522
+
+      - name: Install Dependencies
+        run: npm install
+        working-directory: 20231720_DOE522
+
 
       # Add steps for other stages (Test, Deploy) if needed
